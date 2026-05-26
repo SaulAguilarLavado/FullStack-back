@@ -1,44 +1,37 @@
 package com.ticketflow.FullStack_back.controllers;
 
-import com.ticketflow.FullStack_back.models.LoginRequest;
-import com.ticketflow.FullStack_back.models.LoginResponse;
-import com.ticketflow.FullStack_back.models.User;
+import com.ticketflow.FullStack_back.dto.auth.LoginRequest;
+import com.ticketflow.FullStack_back.dto.auth.LoginResponse;
+import com.ticketflow.FullStack_back.dto.auth.RegisterRequest;
 import com.ticketflow.FullStack_back.services.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ticketflow.FullStack_back.shared.response.ApiResponse;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+    private final AuthService authService;
 
-    @Autowired
-    private AuthService authService;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
-        if (response.isSuccess()) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
-        }
+        HttpStatus status = response.isSuccess() ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        return ResponseEntity.status(status)
+                .body(new ApiResponse<>(response.isSuccess(), response.getMessage(), response));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<LoginResponse> register(@RequestBody User user) {
-        LoginResponse response = authService.registerUser(user);
-        if (response.isSuccess()) {
-            return ResponseEntity.ok(response);
-        } else {
-            return ResponseEntity.badRequest().body(response);
-        }
-    }
-
-    @PostMapping("/payment")
-    public ResponseEntity<LoginResponse> processPayment(@RequestBody Object paymentData) {
-        // Simular procesamiento de pago exitoso
-        LoginResponse response = new LoginResponse(true, "Pago procesado exitosamente", null, null);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<ApiResponse<LoginResponse>> register(@Valid @RequestBody RegisterRequest request) {
+        LoginResponse response = authService.register(request);
+        HttpStatus status = response.isSuccess() ? HttpStatus.CREATED : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status)
+                .body(new ApiResponse<>(response.isSuccess(), response.getMessage(), response));
     }
 }
